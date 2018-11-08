@@ -3,7 +3,7 @@ module Main where
 import RAM
 import Instruction
 import RawInstruction
-
+import qualified Version1 as V1
 import System.Environment
 
 
@@ -17,6 +17,6 @@ main = do
 
   instructions <- readData "data1.txt"
   ram <- return $ RAM [] 0 0 0
-  results <- return $ loadInstructionV1 ram (fromRawInstruction (instructions!!0) Second)
+  results <- return $ V1.loadInstruction ram (fromRawInstruction (instructions!!0) Second)
   print results
   
