@@ -16,7 +16,7 @@ main = do
 --  print dataRead
 
   instructions <- readData "data1.txt"
-  ram <- return $ RAM [] 0 0 0
+  ram <- return $ startingRAM
   results <- return $ V1.loadInstruction ram (fromRawInstruction (instructions!!0) Second)
   print results
   

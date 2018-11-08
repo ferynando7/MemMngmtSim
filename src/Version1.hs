@@ -4,46 +4,62 @@ import Instruction
 import RAM
 
 addInstruction :: Instruction -> RAM -> RAM
-addInstruction instr (RAM instrs faults refs counter) = RAM (instr:instrs) faults refs counter
+addInstruction instr ram = ram {getInstructions = newInstructions}
+    where 
+        newInstructions = insertInstruction $ getInstructions ram
+        insertInstruction (x:xs)
+            | x == Null = instr:xs
+            | otherwise = x:(insertInstruction xs)
 
 --Devuelve la lista de instrucciones y ademas el dirty bit de la instrucción que se eliminó
 removeInstruction :: [Instruction] -> ([Instruction], BoolNum)
 removeInstruction lst
-    | not $ null zz = ( filter (/= (fst $ getMinimalInstr zz)) lst , snd $ getMinimalInstr zz)
-    | not $ null zo = ( filter (/= (fst $ getMinimalInstr zo)) lst , snd $ getMinimalInstr zo)
-    | not $ null oz = ( filter (/= (fst $ getMinimalInstr oz)) lst , snd $ getMinimalInstr oz)
-    | not $ null oo = ( filter (/= (fst $ getMinimalInstr oo)) lst , snd $ getMinimalInstr oo)
+    | exist lst Zero Zero = setNull lst Zero Zero
+    | exist lst Zero One = setNull lst Zero One
+    | exist lst One Zero = setNull lst One Zero
+    | exist lst One One = setNull lst One One
     | otherwise = error "removeInstructionError" 
-        where 
-        zz = filter (\(Instruction _ _ ref dirty) -> if ref==Zero && dirty==Zero then True else False) lst
-        zo = filter (\(Instruction _ _ ref dirty) -> if ref==Zero && dirty==One then True else False) lst
-        oz = filter (\(Instruction _ _ ref dirty) -> if ref==One && dirty==Zero then True else False) lst
-        oo = filter (\(Instruction _ _ ref dirty) -> if ref==One && dirty==One then True else False) lst
+        where
+            exist [] _ _ = False
+            exist (x:xs) refBit dirtyBit
+                | x == Null = False
+                | (getRefBit x, getDirtyBit x) == (refBit, dirtyBit) = True
+                | otherwise = False || exist xs refBit dirtyBit
+            setNull (x:xs) refBit dirtyBit
+                | (getRefBit x, getDirtyBit x) == (refBit, dirtyBit) = (Null:xs, getDirtyBit x)
+                | otherwise = let newTuple = setNull xs refBit dirtyBit
+                                in (x:(fst newTuple), snd newTuple)
+
 
 replaceInstrucion :: Instruction -> RAM ->  RAM
-replaceInstrucion instr ram@(RAM instrs faults refs counter)
-        | bool == One = (incDisksRefs . (addInstruction instr)) (RAM nInstrs faults refs counter)
-        | otherwise = (addInstruction instr) (RAM nInstrs faults refs counter)
+replaceInstrucion instr ram
+        | bool == One = (incWriteNum . (addInstruction instr)) ram {getInstructions = nInstrs}
+        | otherwise = (addInstruction instr) ram {getInstructions = nInstrs}
     where 
-    (nInstrs, bool) = removeInstruction instrs
+    (nInstrs, bool) = removeInstruction $ getInstructions ram
 
---Devuelve la instruccion que se elimino, ademas su dirty bit
-getMinimalInstr :: [Instruction] -> (Instruction, BoolNum)
-getMinimalInstr lst@(x:xs) =  (eliminated , getDirtyBit eliminated)
-        where 
-            eliminated = (foldr1 (\x acc -> if x < acc then x else acc)) lst
+
+checkDirtyBit :: Instruction -> RAM -> RAM
+checkDirtyBit instr ram 
+        | getDirtyBit instr == Zero = ram
+        | otherwise = ram {getInstructions = updateInstructions oldInstructions}
+            where 
+                oldInstructions = getInstructions ram
+                updateInstructions (x:xs)
+                        | x == instr = (x {getDirtyBit = One}):xs 
+                        | otherwise = x:(updateInstructions xs)
 
 loadInstruction :: RAM -> Instruction -> RAM
 loadInstruction ram instr
     --Si la instruccion esta en la RAM
-    | isInstructionInRam nRam instr = nRam
+    | elem instr (getInstructions nRam) = checkDirtyBit instr nRam
         
     --Si la instruccion no esta en la RAM
-    | otherwise = let nnRam = (incDisksRefs . incPageFaults) nRam --Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
+    | otherwise = let nnRam = (incReadNum . incPageFaults) nRam --Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
             in
                 --Analizar si hay espacio en la RAM
-                case (length (getInstructions nnRam)) of    32 -> replaceInstrucion instr nnRam
-                                                            _  -> addInstruction instr nnRam
+                case (elem Null (getInstructions nnRam)) of False -> replaceInstrucion instr nnRam
+                                                            True  -> addInstruction instr nnRam
 
     where
     nRam = updateInstrCounter ram

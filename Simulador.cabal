@@ -21,4 +21,5 @@ executable Simulador
     base -any,
     bytestring -any,
     directory -any
-
+  other-modules: Instruction, RAM, RawInstruction, Version1
+  
