@@ -10,9 +10,16 @@ data Instruction = Null | Instruction {
   getFrameNumber :: Integer,
   getRefBit :: BoolNum,
   getDirtyBit :: BoolNum
-} deriving (Show)
+}
 
-
+instance Show Instruction where
+    show Null = "\nNull"
+    show instr = "\npid = " ++ pid ++ ", fn = " ++ fn ++ ", rb = " ++ rb ++ ", db = " ++ db
+        where
+            pid = show $ getProcessId instr
+            fn = show $ getFrameNumber instr
+            rb = show $ getRefBit instr
+            db = show $getDirtyBit instr
 instance Eq Instruction where
     Null == Null = True
     _ == Null = False
@@ -29,7 +36,7 @@ instance Ord Instruction where
 
 
 
-fromRawInstruction :: RI.RawInstruction -> Opening -> Instruction
-fromRawInstruction (RI.RawInstruction pid instrDir memRef mode) opn
+fromRawInstruction :: Opening -> RI.RawInstruction ->  Instruction
+fromRawInstruction opn (RI.RawInstruction pid instrDir memRef mode)
     | opn == First = Instruction pid instrDir One Zero
     | otherwise = Instruction pid memRef One (if mode == "W" then One else Zero)

@@ -13,9 +13,8 @@ data RawInstruction = RawInstruction {
 
 readData :: String -> IO [RawInstruction]
 readData fileName = do 
-  pathText1 <- fmap (++ ("/src/" ++ fileName)) getCurrentDirectory
-  --pathText1 <- return $ "/home/fz/Desktop/8vo ciclo/OS/Tasks/Simulador/src/" ++ fileName
-  fileRead <- BStr.readFile pathText1
+  path <- fmap (++ "/" ++ fileName) getCurrentDirectory
+  fileRead <- BStr.readFile path
   return $ (map (toRawInstruction . (BStr.split ' ')) . BStr.lines) fileRead
 
 toRawInstruction :: [ByteString] -> RawInstruction

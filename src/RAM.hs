@@ -8,7 +8,18 @@ data RAM = RAM {
   getReadNum :: Integer,
   getWriteNum :: Integer,
   getInstrCounter :: Integer
-} deriving (Eq, Show)  
+} deriving (Eq)  
+
+
+instance Show RAM where
+  show ram = instrs ++ "\n PageFaults: " ++ pf ++ ", ReadNum: " ++ rn ++ ", WriteNum: " ++ wn ++ ", InstrCounter: " ++ ic
+    where 
+      instrs = foldl (\acc x -> acc ++ show x) "" $ getInstructions ram
+      pf = show $ getPageFaults ram
+      rn = show $ getReadNum ram
+      wn = show $ getWriteNum ram
+      ic = show $ getInstrCounter ram
+
 
 startingRAM :: RAM
 startingRAM = RAM (replicate 32 Null) 0 0 0 0
@@ -33,5 +44,4 @@ updateInstrCounter ram = case (getInstrCounter ram) of  200 -> restartRefBits ra
 restartRefBits :: RAM -> RAM
 restartRefBits ram = ram {getInstructions = restartInstrs $ getInstructions ram, getInstrCounter = 0}
         where
-            restartInstrs = map (\(Instruction pid fn rb db) -> Instruction pid fn Zero db) 
-
+            restartInstrs = map (\instr -> if instr == Null then Null else instr {getRefBit = Zero})

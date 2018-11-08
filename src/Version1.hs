@@ -2,7 +2,9 @@ module Version1 where
 
 import Instruction
 import RAM
+import RawInstruction
 
+--Esta funcion asume que existe especio en la RAM
 addInstruction :: Instruction -> RAM -> RAM
 addInstruction instr ram = ram {getInstructions = newInstructions}
     where 
@@ -49,8 +51,9 @@ checkDirtyBit instr ram
                         | x == instr = (x {getDirtyBit = One}):xs 
                         | otherwise = x:(updateInstructions xs)
 
-loadInstruction :: RAM -> Instruction -> RAM
-loadInstruction ram instr
+
+putInstructionInRAM :: RAM -> Instruction ->  RAM
+putInstructionInRAM ram instr
     --Si la instruccion esta en la RAM
     | elem instr (getInstructions nRam) = checkDirtyBit instr nRam
         
@@ -63,8 +66,14 @@ loadInstruction ram instr
 
     where
     nRam = updateInstrCounter ram
-            
-loadInstructions :: RAM -> [Instruction] -> RAM
+
+
+loadInstruction :: Opening -> RAM -> RawInstruction -> RAM
+loadInstruction opn ram rinstr
+        | opn == First = loadInstruction Second (putInstructionInRAM ram (fromRawInstruction First rinstr)) rinstr
+        | opn == Second = putInstructionInRAM ram (fromRawInstruction Second rinstr)
+
+loadInstructions :: RAM -> [RawInstruction] -> RAM
 loadInstructions ram [] = ram
-loadInstructions ram (x:xs) = loadInstructions (loadInstruction ram x) xs 
+loadInstructions ram (x:xs) = loadInstructions (loadInstruction First ram x) xs 
             

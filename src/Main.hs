@@ -11,12 +11,14 @@ import System.Environment
 
 main :: IO ()
 main = do
---  args <- getArgs
---  dataRead <- readData (args!!0)
---  print dataRead
-
-  instructions <- readData "data1.txt"
+-----------------------------------------------
+--For building executable file enable this
+  --args <- getArgs
+  --rawInstructions <- readData (args!!0)
+--For running from "stack ghci" command enable this
+  rawInstructions <- readData "/src/data1.txt"
+-----------------------------------------------
   ram <- return $ startingRAM
-  results <- return $ V1.loadInstruction ram (fromRawInstruction (instructions!!0) Second)
+  results <- return $ V1.loadInstructions ram rawInstructions
   print results
   
