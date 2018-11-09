@@ -20,6 +20,7 @@ executable Simulador
   build-depends:       
     base -any,
     bytestring -any,
-    directory -any
+    directory -any,
+    strict-io -any
   other-modules: Instruction, RAM, RawInstruction, Version1
   

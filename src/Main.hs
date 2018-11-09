@@ -7,6 +7,7 @@ import qualified Version1 as V1
 import qualified Version2 as V2
 import System.Environment
 import Types
+import qualified System.IO.Strict as S
 
 
 
@@ -32,4 +33,4 @@ main = do
   results <- case version of  "1" -> return $ V1.loadInstructions debug ram rawInstructions
                               "2" -> return $ V2.loadInstructions debug ram rawInstructions
                               other -> error "version no adecuada"
-  print results
+  print $! results
