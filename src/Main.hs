@@ -4,7 +4,11 @@ import RAM
 import Instruction
 import RawInstruction
 import qualified Version1 as V1
+import qualified Version2 as V2
 import System.Environment
+
+
+
 
 main :: IO ()
 main = do
@@ -24,5 +28,7 @@ main = do
   version <- getLine
   -----------------------------------------------
   ram <- return $ startingRAM
-  results <- return $ V1.loadInstructions ram rawInstructions
+  results <- case version of  "1" -> return $ V1.loadInstructions ram rawInstructions
+                              "2" -> return $ V2.loadInstructions ram rawInstructions
+                              other -> error "version no adecuada"
   print results
