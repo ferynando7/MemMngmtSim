@@ -71,12 +71,13 @@ putInstructionInRAM ram instr
         nRam = updateInstrCounter ram
 
 --Cargo la misma instruccion las dos veces que se necesita
-loadInstruction :: Opening -> RAM -> RawInstruction -> RAM
-loadInstruction opn ram rinstr
-        | opn == First = loadInstruction Second (putInstructionInRAM ram (fromRawInstruction First rinstr)) rinstr
-        | opn == Second = putInstructionInRAM ram (fromRawInstruction Second rinstr)
+loadInstruction :: RAM -> RawInstruction -> RAM
+loadInstruction ram rinstr = putInstructionInRAM (putInstructionInRAM ram (ft)) (sd)
+        where   ft = fromRawInstruction First rinstr 
+                sd = fromRawInstruction Second rinstr
 
 loadInstructions :: RAM -> [RawInstruction] -> RAM
 loadInstructions ram [] = ram
-loadInstructions ram (x:xs) = loadInstructions (loadInstruction First ram x) xs 
+loadInstructions ram (x:xs) = loadInstructions (loadInstruction ram x) xs 
+            
             
