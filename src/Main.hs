@@ -12,9 +12,17 @@ main = do
 --For building executable file enable this
   --args <- getArgs
   --rawInstructions <- readData (args!!0)
+  --version <- (args!!1)
+  --debug <- if (length args == 3) then 1 else 0
 --For running from "stack ghci" command enable this
-  rawInstructions <- readData "/src/data1.txt"
------------------------------------------------
+  putStr "File: "
+  file <- getLine
+  rawInstructions <- readData $ "/src/" ++ file
+  putStr "Version: "
+  version <- getLine 
+  putStr "Debug: "
+  version <- getLine
+  -----------------------------------------------
   ram <- return $ startingRAM
-  results <- return $ V1.loadInstructions ram [rawInstructions!!0, rawInstructions!!0]
+  results <- return $ V1.loadInstructions ram rawInstructions
   print results
