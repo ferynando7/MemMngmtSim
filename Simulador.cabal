@@ -22,5 +22,5 @@ executable Simulador
     bytestring -any,
     directory -any,
     strict-io -any
-  other-modules: Instruction, RAM, RawInstruction, Version1
+  other-modules: Instruction, RAM, RawInstruction, Version1, Version2, Types
   

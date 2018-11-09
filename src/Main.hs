@@ -16,18 +16,18 @@ main :: IO ()
 main = do
 -----------------------------------------------
 --For building executable file enable this
-  --args <- getArgs
-  --rawInstructions <- readData (args!!0)
-  --version <- (args!!1)
-  --debug <- if (length args == 3) then Development else Production
+  args <- getArgs
+  rawInstructions <- readData (args!!0)
+  version <- return $ (args!!1)
+  debug <- if (length args == 3) then return $ Development else return $ Production
 --For running from "stack ghci" command enable this
-  putStr "File: "
-  file <- getLine
-  rawInstructions <- readData $ "/src/" ++ file
-  putStr "Version: "
-  version <- getLine 
-  putStr "Debug: "
-  debug <- fmap (\lst -> if length lst == 0 then Production else Development) getLine
+  -- putStr "File: "
+  -- file <- getLine
+  -- rawInstructions <- readData $ "/src/" ++ file
+  -- putStr "Version: "
+  -- version <- getLine 
+  -- putStr "Debug: "
+  -- debug <- fmap (\lst -> if length lst == 0 then Production else Development) getLine
   -----------------------------------------------
   ram <- return $ startingRAM
   results <- case version of  "1" -> return $ V1.loadInstructions debug ram rawInstructions
