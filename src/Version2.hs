@@ -1,96 +1,57 @@
 module Version2 where
 
-<<<<<<< HEAD
-import Instruction hiding (fromRawInstruction)
+import qualified Instruction as I
 import RAM
 import RawInstruction
-import qualified Version1 as V1 hiding (removeInstruction)
+import Types
+import Debug.Trace
+import Version1 hiding (removeInstruction, replaceInstrucion, putInstructionInRAM, loadInstruction, loadInstructions)
 
 --Devuelve la lista de instrucciones y ademas el dirty bit de la instrucción que se eliminó
-removeInstruction :: [Instruction] -> ([Instruction], BoolNum)
-removeInstruction lst = (setNull lst menor, getDirtyBit menor)
+removeInstruction :: [I.Instruction] -> ([I.Instruction], I.Instruction, Integer)
+removeInstruction lst = (fst (setNull lst menor), menor, snd (setNull lst menor))
     where   menor = foldl1 (\men elem -> if elem < men then elem else men) lst
             setNull (x:xs) ins
-                | x == ins = Null:xs
-                | otherwise = x : setNull xs ins
-
-replaceInstrucion :: Instruction -> RAM -> RAM
-replaceInstrucion instr ram
-        | bool == One = (incWriteNum . (addInstruction instr)) ram {getInstructions = nInstrs}
-        | otherwise = (addInstruction instr) ram {getInstructions = nInstrs}
-    where
-    (nInstrs, bool) = removeInstruction $ getInstructions ram
-
-
-putInstructionInRAM :: RAM -> Instruction -> RAM
-putInstructionInRAM ram instr
-        --Si la instruccion esta en la RAM
-        | elem instr (getInstructions nRam) = checkDirtyBit instr nRam
-
-        --Si la instruccion no esta en la RAM
-        | otherwise = let nnRam = (incReadNum . incPageFaults) nRam --Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
-                    in
-                        --Analizar si hay espacio en la RAM
-                        case (elem Null (getInstructions nnRam)) of False -> replaceInstrucion instr nnRam
-                        True -> addInstruction instr nnRam
-
-    where
-        nRam = updateInstrCounter ram
+                | x == ins = (I.Null:xs , 0)
+                | otherwise = (x : fst (setNull xs ins) , snd (setNull xs ins) + 1)
+                                
+replaceInstrucion :: Environment -> I.Instruction -> RAM ->  RAM
+replaceInstrucion env instr ram
+        | I.getDirtyBit rmInstr == One = 
+            case env of Development -> trace (unwords debugString) dirtyPage
+                        Production -> dirtyPage
+        | otherwise = 
+            case env of Development -> trace (unwords debugString) notDirtyPage
+                        Production -> notDirtyPage
+    where 
+        dirtyPage = incWriteNum notDirtyPage
+        notDirtyPage = (addInstruction instr) ram {getInstructions = nInstrs}
+        (nInstrs, rmInstr, ramPos) = removeInstruction $ getInstructions ram
+        debugString = [show $ I.getLineNumber instr, show $ ramPos, show $ I.getProcessId rmInstr, show $ I.getFrameNumber rmInstr, show $ I.getDirtyBit rmInstr]
 
 
-loadInstruction :: RAM -> RawInstruction -> RAM
-loadInstruction ram rinstr = putInstructionInRAM (putInstructionInRAM ram (ft)) (sd)
-    where   ft = fromRawInstruction First rinstr ram
-            sd = fromRawInstruction Second rinstr ram
 
-loadInstructions :: RAM -> [RawInstruction] -> RAM
-loadInstructions ram [] = ram
-loadInstructions ram (x:xs) = loadInstructions (loadInstruction ram x) xs
-=======
-    import Instruction 
-    import RAM
-    import RawInstruction
-    import Version1 hiding (removeInstruction, replaceInstrucion, putInstructionInRAM, loadInstruction, loadInstructions)
-    
-    --Devuelve la lista de instrucciones y ademas el dirty bit de la instrucción que se eliminó
-    removeInstruction :: [Instruction] -> ([Instruction], BoolNum)
-    removeInstruction lst = (setNull lst menor, getDirtyBit menor)
-        where   menor = foldl1 (\men elem -> if elem < men then elem else men) lst
-                setNull (x:xs) ins
-                    | x == ins = Null:xs
-                    | otherwise = x : setNull xs ins
-                                  
-    replaceInstrucion :: Instruction -> RAM ->  RAM
-    replaceInstrucion instr ram
-            | bool == One = (incWriteNum . (addInstruction instr)) ram {getInstructions = nInstrs}
-            | otherwise = (addInstruction instr) ram {getInstructions = nInstrs}
-        where 
-        (nInstrs, bool) = removeInstruction $ getInstructions ram
-    
+putInstructionInRAM :: Environment -> RAM -> I.Instruction ->  RAM
+putInstructionInRAM env ram instr
+    --Si la instruccion esta en la RAM
+    | elem instr (getInstructions nRam) = checkDirtyBit instr nRam
         
-    putInstructionInRAM :: RAM -> Instruction ->  RAM
-    putInstructionInRAM ram instr
-        --Si la instruccion esta en la RAM
-        | elem instr (getInstructions nRam) = checkDirtyBit instr nRam
-            
-        --Si la instruccion no esta en la RAM
-        | otherwise = let nnRam = (incReadNum . incPageFaults) nRam --Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
-                in
-                    --Analizar si hay espacio en la RAM
-                    case (elem Null (getInstructions nnRam)) of False -> replaceInstrucion instr nnRam
+    --Si la instruccion no esta en la RAM
+    | otherwise = let nnRam = (incReadNum . incPageFaults) nRam --Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
+            in
+                --Analizar si hay espacio en la RAM
+                case (elem I.Null (getInstructions nnRam)) of   False -> replaceInstrucion env instr nnRam
                                                                 True  -> addInstruction instr nnRam
-    
-        where
+
+    where
         nRam = updateInstrCounter ram
-    
-    
-    loadInstruction :: RAM -> RawInstruction -> RAM
-    loadInstruction ram rinstr = putInstructionInRAM (putInstructionInRAM ram (ft)) (sd)
-            where   ft = fromRawInstruction First rinstr 
-                    sd = fromRawInstruction Second rinstr
-    
-    loadInstructions :: RAM -> [RawInstruction] -> RAM
-    loadInstructions ram [] = ram
-    loadInstructions ram (x:xs) = loadInstructions (loadInstruction ram x) xs 
-                
->>>>>>> 7a4abeb259a13607dedc5416e22bf2f5212a2288
+
+--Cargo la misma instruccion las dos veces que se necesita
+loadInstruction :: Environment -> RAM -> RawInstruction -> RAM
+loadInstruction env ram rinstr = putInstructionInRAM env (putInstructionInRAM env ram (ft)) (sd)
+        where   ft = I.fromRawInstruction First rinstr 
+                sd = I.fromRawInstruction Second rinstr
+
+loadInstructions :: Environment -> RAM -> [RawInstruction] -> RAM
+loadInstructions env ram [] = ram
+loadInstructions env ram (x:xs) = loadInstructions env (loadInstruction env ram x) xs 

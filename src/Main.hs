@@ -6,6 +6,7 @@ import RawInstruction
 import qualified Version1 as V1
 import qualified Version2 as V2
 import System.Environment
+import Types
 
 
 
@@ -17,7 +18,7 @@ main = do
   --args <- getArgs
   --rawInstructions <- readData (args!!0)
   --version <- (args!!1)
-  --debug <- if (length args == 3) then 1 else 0
+  --debug <- if (length args == 3) then Development else Production
 --For running from "stack ghci" command enable this
   putStr "File: "
   file <- getLine
@@ -25,10 +26,10 @@ main = do
   putStr "Version: "
   version <- getLine 
   putStr "Debug: "
-  version <- getLine
+  debug <- fmap (\lst -> if length lst == 0 then Production else Development) getLine
   -----------------------------------------------
   ram <- return $ startingRAM
-  results <- case version of  "1" -> return $ V1.loadInstructions ram rawInstructions
-                              "2" -> return $ V2.loadInstructions ram rawInstructions
+  results <- case version of  "1" -> return $ V1.loadInstructions debug ram rawInstructions
+                              "2" -> return $ V2.loadInstructions debug ram rawInstructions
                               other -> error "version no adecuada"
   print results

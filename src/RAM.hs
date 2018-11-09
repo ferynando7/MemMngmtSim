@@ -1,6 +1,7 @@
 module RAM where
 
 import Instruction
+import Types
 
 data RAM = RAM {
   getInstructions :: [Instruction], 
@@ -13,7 +14,7 @@ data RAM = RAM {
 
 instance Show RAM where
 --  show ram = instrs ++ "\n PageFaults: " ++ pf ++ ", ReadNum: " ++ rn ++ ", WriteNum: " ++ wn ++ ", InstrCounter: " ++ ic
-  show ram = instrs ++ "\n PageFaults: " ++ pf ++ ", ReadNum: " ++ rn ++ ", WriteNum: " ++ wn ++ ", InstrCounter: " ++ ic
+  show ram ="\n PageFaults: " ++ pf ++ ", ReadNum: " ++ rn ++ ", WriteNum: " ++ wn ++ ", InstrCounter: " ++ ic
     where 
         instrs = foldl (\acc x -> acc ++ show x) "" $ getInstructions ram
         pf = show $ getPageFaults ram

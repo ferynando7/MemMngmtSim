@@ -1,9 +1,7 @@
 module Instruction where
 
 import qualified RawInstruction as RI
-
-data BoolNum = Zero | One deriving (Eq, Show)
-data Opening = First | Second deriving (Eq)
+import Types
 
 data Instruction = Null | Instruction {
     getLineNumber :: Integer,
@@ -32,9 +30,10 @@ instance Eq Instruction where
 instance Ord Instruction where
     compare inst1 inst2 
                 | (getLineNumber inst1) < (getLineNumber inst2) = LT
-                | (getLineNumber inst1) == (getLineNumber inst2) = 
+                | (getLineNumber inst1) > (getLineNumber inst2) = GT
+                | otherwise = 
                     case (getDirtyBit inst1, getDirtyBit inst2) of  (One, Zero) -> GT
-                                                                    _ -> LT
+                                                                    _  -> LT
 
 
 

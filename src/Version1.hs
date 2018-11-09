@@ -1,62 +1,72 @@
 module Version1 where
 
-import Instruction
+import qualified Instruction as I
 import RAM
 import RawInstruction
-
+import Types
+import Debug.Trace
 
 
 
 --Esta funcion asume que existe especio en la RAM
-addInstruction :: Instruction -> RAM -> RAM
+addInstruction :: I.Instruction -> RAM -> RAM
 addInstruction instr ram = ram {getInstructions = newInstructions}
     where 
         newInstructions = insertInstruction $ getInstructions ram
         insertInstruction (x:xs)
-            | x == Null = instr:xs
+            | x == I.Null = instr:xs
             | otherwise = x:(insertInstruction xs)
 
---Devuelve la lista de instrucciones y ademas el dirty bit de la instrucción que se eliminó
-removeInstruction :: [Instruction] -> ([Instruction], BoolNum)
+--Devuelve la lista de instrucciones y ademas la instrucción que se eliminó
+removeInstruction :: [I.Instruction] -> ([I.Instruction], I.Instruction, Integer)
 removeInstruction lst
-    | exist lst Zero Zero = setNull lst Zero Zero
-    | exist lst Zero One = setNull lst Zero One
-    | exist lst One Zero = setNull lst One Zero
-    | exist lst One One = setNull lst One One
+    | exist lst Zero Zero = setNull lst Zero Zero 0
+    | exist lst Zero One = setNull lst Zero One 0
+    | exist lst One Zero = setNull lst One Zero 0
+    | exist lst One One = setNull lst One One 0
     | otherwise = error "removeInstructionError" 
         where
             exist [] _ _ = False
             exist (x:xs) refBit dirtyBit
-                -- | x == Null = False
-                | (getRefBit x, getDirtyBit x) == (refBit, dirtyBit) = True
+                | (I.getRefBit x, I.getDirtyBit x) == (refBit, dirtyBit) = True
                 | otherwise = False || exist xs refBit dirtyBit
-            setNull (x:xs) refBit dirtyBit
-                | (getRefBit x, getDirtyBit x) == (refBit, dirtyBit) = (Null:xs, getDirtyBit x)
-                | otherwise = let newTuple = setNull xs refBit dirtyBit
-                                in (x:(fst newTuple), snd newTuple)
+            setNull (x:xs) refBit dirtyBit cont
+                | (I.getRefBit x, I.getDirtyBit x) == (refBit, dirtyBit) = (,,) (I.Null:xs) x cont
+                | otherwise = 
+                    let newTuple = setNull xs refBit dirtyBit (cont + 1)
+                        frst = (\(x,_,_) -> x)
+                        scnd = (\(_,x,_) -> x)
+                        thrd = (\(_,_,x) -> x)
+                    in (,,) (x:(frst newTuple)) (scnd newTuple) (thrd newTuple)
 
 
-replaceInstrucion :: Instruction -> RAM ->  RAM
-replaceInstrucion instr ram
-        | bool == One = (incWriteNum . (addInstruction instr)) ram {getInstructions = nInstrs}
-        | otherwise = (addInstruction instr) ram {getInstructions = nInstrs}
+replaceInstrucion :: Environment -> I.Instruction -> RAM ->  RAM
+replaceInstrucion env instr ram
+        | I.getDirtyBit rmInstr == One = 
+            case env of Development -> trace (unwords debugString) dirtyPage
+                        Production -> dirtyPage
+        | otherwise = 
+            case env of Development -> trace (unwords debugString) notDirtyPage
+                        Production -> notDirtyPage
     where 
-    (nInstrs, bool) = removeInstruction $ getInstructions ram
+        dirtyPage = incWriteNum notDirtyPage
+        notDirtyPage = (addInstruction instr) ram {getInstructions = nInstrs}
+        (nInstrs, rmInstr, ramPos) = removeInstruction $ getInstructions ram
+        debugString = [show $ I.getLineNumber instr, show $ ramPos, show $ I.getProcessId rmInstr, show $ I.getFrameNumber rmInstr, show $ I.getDirtyBit rmInstr]
 
-
-checkDirtyBit :: Instruction -> RAM -> RAM
+checkDirtyBit :: I.Instruction -> RAM -> RAM
 checkDirtyBit instr ram 
-        | getDirtyBit instr == Zero = ram
+        | I.getDirtyBit instr == Zero = ram
         | otherwise = ram {getInstructions = updateInstructions oldInstructions}
             where 
                 oldInstructions = getInstructions ram
                 updateInstructions (x:xs)
-                        | x == instr = (x {getDirtyBit = One}):xs 
+                        | x == instr = (x {I.getDirtyBit = One}):xs 
                         | otherwise = x:(updateInstructions xs)
 
 
-putInstructionInRAM :: RAM -> Instruction ->  RAM
-putInstructionInRAM ram instr
+putInstructionInRAM :: Environment -> RAM -> I.Instruction ->  RAM
+putInstructionInRAM env ram instr
     --Si la instruccion esta en la RAM
     | elem instr (getInstructions nRam) = checkDirtyBit instr nRam
         
@@ -64,20 +74,20 @@ putInstructionInRAM ram instr
     | otherwise = let nnRam = (incReadNum . incPageFaults) nRam --Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
             in
                 --Analizar si hay espacio en la RAM
-                case (elem Null (getInstructions nnRam)) of False -> replaceInstrucion instr nnRam
-                                                            True  -> addInstruction instr nnRam
+                case (elem I.Null (getInstructions nnRam)) of   False -> replaceInstrucion env instr nnRam
+                                                                True  -> addInstruction instr nnRam
 
     where
         nRam = updateInstrCounter ram
 
 --Cargo la misma instruccion las dos veces que se necesita
-loadInstruction :: RAM -> RawInstruction -> RAM
-loadInstruction ram rinstr = putInstructionInRAM (putInstructionInRAM ram (ft)) (sd)
-        where   ft = fromRawInstruction First rinstr 
-                sd = fromRawInstruction Second rinstr
+loadInstruction :: Environment -> RAM -> RawInstruction -> RAM
+loadInstruction env ram rinstr = putInstructionInRAM env (putInstructionInRAM env ram (ft)) (sd)
+        where   ft = I.fromRawInstruction First rinstr 
+                sd = I.fromRawInstruction Second rinstr
 
-loadInstructions :: RAM -> [RawInstruction] -> RAM
-loadInstructions ram [] = ram
-loadInstructions ram (x:xs) = loadInstructions (loadInstruction ram x) xs 
+loadInstructions :: Environment -> RAM -> [RawInstruction] -> RAM
+loadInstructions env ram [] = ram
+loadInstructions env ram (x:xs) = loadInstructions env (loadInstruction env ram x) xs 
             
             
