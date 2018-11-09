@@ -12,13 +12,14 @@ data RAM = RAM {
 
 
 instance Show RAM where
+--  show ram = instrs ++ "\n PageFaults: " ++ pf ++ ", ReadNum: " ++ rn ++ ", WriteNum: " ++ wn ++ ", InstrCounter: " ++ ic
   show ram = instrs ++ "\n PageFaults: " ++ pf ++ ", ReadNum: " ++ rn ++ ", WriteNum: " ++ wn ++ ", InstrCounter: " ++ ic
     where 
-      instrs = foldl (\acc x -> acc ++ show x) "" $ getInstructions ram
-      pf = show $ getPageFaults ram
-      rn = show $ getReadNum ram
-      wn = show $ getWriteNum ram
-      ic = show $ getInstrCounter ram
+        instrs = foldl (\acc x -> acc ++ show x) "" $ getInstructions ram
+        pf = show $ getPageFaults ram
+        rn = show $ getReadNum ram
+        wn = show $ getWriteNum ram
+        ic = show $ getInstrCounter ram
 
 
 startingRAM :: RAM
@@ -38,7 +39,7 @@ incWriteNum ram = ram { getWriteNum = (getWriteNum ram)+1}
 
 
 updateInstrCounter :: RAM -> RAM
-updateInstrCounter ram = case (getInstrCounter ram) of  200 -> restartRefBits ram 
+updateInstrCounter ram = case (getInstrCounter ram) of  199 -> restartRefBits ram 
                                                         _ -> incInstrCounter ram
 
 restartRefBits :: RAM -> RAM

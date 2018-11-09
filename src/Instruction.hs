@@ -6,10 +6,11 @@ data BoolNum = Zero | One deriving (Eq, Show)
 data Opening = First | Second deriving (Eq)
 
 data Instruction = Null | Instruction {
-  getProcessId :: Integer,
-  getFrameNumber :: Integer,
-  getRefBit :: BoolNum,
-  getDirtyBit :: BoolNum
+    getLineNumber :: Integer,
+    getProcessId :: Integer,
+    getFrameNumber :: Integer,
+    getRefBit :: BoolNum,
+    getDirtyBit :: BoolNum
 }
 
 instance Show Instruction where
@@ -30,13 +31,14 @@ instance Eq Instruction where
   
 instance Ord Instruction where
     compare inst1 inst2 
-                | (getFrameNumber inst1) < (getFrameNumber inst2) = LT
-                | (getFrameNumber inst1) > (getFrameNumber inst2) = GT
-                | otherwise = EQ
+                | (getLineNumber inst1) < (getLineNumber inst2) = LT
+                | (getLineNumber inst1) == (getLineNumber inst2) = 
+                    case (getDirtyBit inst1, getDirtyBit inst2) of  (One, Zero) -> GT
+                                                                    _ -> LT
 
 
 
 fromRawInstruction :: Opening -> RI.RawInstruction ->  Instruction
-fromRawInstruction opn (RI.RawInstruction pid instrDir memRef mode)
-    | opn == First = Instruction pid instrDir One Zero
-    | otherwise = Instruction pid memRef One (if mode == "W" then One else Zero)
+fromRawInstruction opn (RI.RawInstruction ln pid instrDir memRef mode)
+    | opn == First = Instruction ln pid instrDir One Zero
+    | otherwise = Instruction ln pid memRef One (if mode == "W" then One else Zero)

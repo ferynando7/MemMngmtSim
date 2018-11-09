@@ -6,9 +6,6 @@ import RawInstruction
 import qualified Version1 as V1
 import System.Environment
 
-
-
-
 main :: IO ()
 main = do
 -----------------------------------------------
@@ -19,6 +16,5 @@ main = do
   rawInstructions <- readData "/src/data1.txt"
 -----------------------------------------------
   ram <- return $ startingRAM
-  results <- return $ V1.loadInstructions ram rawInstructions
+  results <- return $ V1.loadInstructions ram [rawInstructions!!0, rawInstructions!!0]
   print results
-  

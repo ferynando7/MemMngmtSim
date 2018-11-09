@@ -5,6 +5,7 @@ import System.Directory
 
 
 data RawInstruction = RawInstruction {
+  getLineNumber :: Integer,
   getProcessId :: Integer,
   getInstructionDir :: Integer,
   getMemReference :: Integer,
@@ -15,9 +16,9 @@ readData :: String -> IO [RawInstruction]
 readData fileName = do 
   path <- fmap (++ "/" ++ fileName) getCurrentDirectory
   fileRead <- BStr.readFile path
-  return $ (map (toRawInstruction . (BStr.split ' ')) . BStr.lines) fileRead
+  return $ zipWith (\ln rintr -> rintr {getLineNumber = ln}) [1..] $ (map (toRawInstruction . (BStr.split ' ')) . BStr.lines) fileRead
 
 toRawInstruction :: [ByteString] -> RawInstruction
-toRawInstruction bstr = RawInstruction (read idProcess) (( (`div` 512) . read) instrDir) (( (`div` 512) . read) memRef) mode
-      where
+toRawInstruction bstr = RawInstruction 0 (read idProcess) (( (`div` 512) . read) instrDir) (( (`div` 512) . read) memRef) mode
+    where
         [idProcess, instrDir, memRef, mode] = map unpack bstr 

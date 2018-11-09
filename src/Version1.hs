@@ -4,6 +4,9 @@ import Instruction
 import RAM
 import RawInstruction
 
+
+
+
 --Esta funcion asume que existe especio en la RAM
 addInstruction :: Instruction -> RAM -> RAM
 addInstruction instr ram = ram {getInstructions = newInstructions}
@@ -24,7 +27,7 @@ removeInstruction lst
         where
             exist [] _ _ = False
             exist (x:xs) refBit dirtyBit
-                | x == Null = False
+                -- | x == Null = False
                 | (getRefBit x, getDirtyBit x) == (refBit, dirtyBit) = True
                 | otherwise = False || exist xs refBit dirtyBit
             setNull (x:xs) refBit dirtyBit
@@ -65,9 +68,9 @@ putInstructionInRAM ram instr
                                                             True  -> addInstruction instr nnRam
 
     where
-    nRam = updateInstrCounter ram
+        nRam = updateInstrCounter ram
 
-
+--Cargo la misma instruccion las dos veces que se necesita
 loadInstruction :: Opening -> RAM -> RawInstruction -> RAM
 loadInstruction opn ram rinstr
         | opn == First = loadInstruction Second (putInstructionInRAM ram (fromRawInstruction First rinstr)) rinstr
