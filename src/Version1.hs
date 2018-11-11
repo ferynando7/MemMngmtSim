@@ -5,12 +5,17 @@ import RAM
 import RawInstruction
 import Types
 import Debug.Trace
+import Data.Maybe
+import Data.List
+
 
 
 
 --Esta funcion asume que existe especio en la RAM
-addInstruction :: I.Instruction -> RAM -> RAM
-addInstruction instr ram = ram {getInstructions = newInstructions}
+addInstruction :: Debug -> I.Instruction -> RAM -> RAM
+addInstruction debug instr ram
+    | debug == NoDebug = ram {getInstructions = newInstructions}   
+    | otherwise = trace (show debug) $ ram {getInstructions = newInstructions}   
     where 
         newInstructions = insertInstruction $ getInstructions ram
         insertInstruction (x:xs)
@@ -42,22 +47,20 @@ removeInstruction lst
 
 replaceInstrucion :: Environment -> I.Instruction -> RAM ->  RAM
 replaceInstrucion env instr ram
-        | I.getDirtyBit rmInstr == One = 
-            case env of Development -> trace (unwords debugString) dirtyPage
-                        Production -> dirtyPage
-        | otherwise = 
-            case env of Development -> trace (unwords debugString) notDirtyPage
-                        Production -> notDirtyPage
+        | I.getDirtyBit rmInstr == One = dirtyPage
+        | I.getDirtyBit rmInstr == Zero = notDirtyPage
     where 
         dirtyPage = incWriteNum notDirtyPage
-        notDirtyPage = (addInstruction instr) ram {getInstructions = nInstrs}
+        notDirtyPage
+            | env == Development = (addInstruction debug instr) ram {getInstructions = nInstrs}
+            | otherwise = (addInstruction NoDebug instr) ram {getInstructions = nInstrs}
         (nInstrs, rmInstr, ramPos) = removeInstruction $ getInstructions ram
-        debugString = [show $ I.getLineNumber instr, show $ ramPos, show $ I.getProcessId rmInstr, show $ I.getFrameNumber rmInstr, show $ I.getDirtyBit rmInstr]
+        debug = Debug (I.getLineNumber instr) ramPos (I.getProcessId rmInstr) (I.getFrameNumber rmInstr) (I.getDirtyBit rmInstr)
 
 checkDirtyBit :: I.Instruction -> RAM -> RAM
 checkDirtyBit instr ram 
         | I.getDirtyBit instr == Zero = ram
-        | otherwise = ram {getInstructions = updateInstructions oldInstructions}
+        | I.getDirtyBit instr == One = ram {getInstructions = updateInstructions oldInstructions}
             where 
                 oldInstructions = getInstructions ram
                 updateInstructions (x:xs)
@@ -71,14 +74,14 @@ putInstructionInRAM env ram instr
     | elem instr (getInstructions nRam) = checkDirtyBit instr nRam
         
     --Si la instruccion no esta en la RAM
-    | otherwise = let nnRam = (incReadNum . incPageFaults) nRam --Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
-            in
-                --Analizar si hay espacio en la RAM
-                case (elem I.Null (getInstructions nnRam)) of   False -> replaceInstrucion env instr nnRam
-                                                                True  -> addInstruction instr nnRam
+    --Analizar si hay espacio en la RAM
+    | otherwise = case (elem I.Null (getInstructions nnRam)) of False -> replaceInstrucion env instr nnRam
+                                                                True  -> if env == Development then addInstruction debug instr nnRam else addInstruction NoDebug instr nnRam
 
     where
+        nnRam = (incReadNum . incPageFaults) nRam -- Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
         nRam = updateInstrCounter ram
+        debug = Debug (I.getLineNumber instr) (fromIntegral $ fromJust $ elemIndex I.Null $ (getInstructions nnRam)) 0 0 Zero
 
 --Cargo la misma instruccion las dos veces que se necesita
 loadInstruction :: Environment -> RAM -> RawInstruction -> RAM

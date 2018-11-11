@@ -13,8 +13,9 @@ data Instruction = Null | Instruction {
 
 instance Show Instruction where
     show Null = "\nNull"
-    show instr = "\npid = " ++ pid ++ ", fn = " ++ fn ++ ", rb = " ++ rb ++ ", db = " ++ db
+    show instr = "\nln = " ++ ln ++ ", pid = " ++ pid ++ ", fn = " ++ fn ++ ", rb = " ++ rb ++ ", db = " ++ db
         where
+            ln = show $ getLineNumber instr
             pid = show $ getProcessId instr
             fn = show $ getFrameNumber instr
             rb = show $ getRefBit instr
@@ -40,4 +41,4 @@ instance Ord Instruction where
 fromRawInstruction :: Opening -> RI.RawInstruction ->  Instruction
 fromRawInstruction opn (RI.RawInstruction ln pid instrDir memRef mode)
     | opn == First = Instruction ln pid instrDir One Zero
-    | otherwise = Instruction ln pid memRef One (if mode == "W" then One else Zero)
+    | otherwise = Instruction ln pid memRef One (if mode == "W" then One else (if mode == "R" then Zero else NAN))
