@@ -44,6 +44,10 @@ removeInstruction lst
                         thrd = (\(_,_,x) -> x)
                     in (,,) (x:(frst newTuple)) (scnd newTuple) (thrd newTuple)
 
+updateToNull :: I.Instruction -> [I.Instruction] -> [I.Instruction]
+updateToNull a (x:xs)
+                | a == x = I.Null:xs
+                | otherwise = x:(updateToNull a xs)
 
 replaceInstrucion :: Environment -> I.Instruction -> RAM ->  RAM
 replaceInstrucion env instr ram
@@ -57,35 +61,37 @@ replaceInstrucion env instr ram
         (nInstrs, rmInstr, ramPos) = removeInstruction $ getInstructions ram
         debug = Debug (I.getLineNumber instr) ramPos (I.getProcessId rmInstr) (I.getFrameNumber rmInstr) (I.getDirtyBit rmInstr)
 
-checkDirtyBit :: I.Instruction -> RAM -> RAM
-checkDirtyBit instr ram 
-        | I.getDirtyBit instr == Zero = ram
-        | I.getDirtyBit instr == One = ram {getInstructions = updateInstructions oldInstructions}
+checkDirtyNRefBit :: I.Instruction -> RAM -> RAM
+checkDirtyNRefBit instr ram 
+        | I.getDirtyBit instr == Zero = ram {getInstructions = updateInstructions oldInstructions}
+        | I.getDirtyBit instr == One = ram {getInstructions = updateInstructions $ updateInstructions2 oldInstructions}
             where 
                 oldInstructions = getInstructions ram
                 updateInstructions (x:xs)
-                        | x == instr = (x {I.getDirtyBit = One}):xs 
+                        | x == instr = (x {I.getRefBit = One}):xs 
                         | otherwise = x:(updateInstructions xs)
+                updateInstructions2 (x:xs)
+                        | x == instr = (x {I.getDirtyBit = One}):xs 
+                        | otherwise = x:(updateInstructions2 xs)
 
 
 putInstructionInRAM :: Environment -> RAM -> I.Instruction ->  RAM
 putInstructionInRAM env ram instr
     --Si la instruccion esta en la RAM
-    | elem instr (getInstructions nRam) = checkDirtyBit instr nRam
+    | elem instr (getInstructions nRam) = checkDirtyNRefBit instr ram
         
     --Si la instruccion no esta en la RAM
     --Analizar si hay espacio en la RAM
-    | otherwise = case (elem I.Null (getInstructions nnRam)) of False -> replaceInstrucion env instr nnRam
-                                                                True  -> if env == Development then addInstruction debug instr nnRam else addInstruction NoDebug instr nnRam
+    | otherwise = case (elem I.Null (getInstructions nRam)) of  False -> replaceInstrucion env instr nRam
+                                                                True  -> if env == Development then addInstruction debug instr nRam else addInstruction NoDebug instr nRam
 
     where
-        nnRam = (incReadNum . incPageFaults) nRam -- Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
-        nRam = updateInstrCounter ram
-        debug = Debug (I.getLineNumber instr) (fromIntegral $ fromJust $ elemIndex I.Null $ (getInstructions nnRam)) 0 0 Zero
+        nRam = (incReadNum . incPageFaults) ram -- Incrementamos el numero de fallos de pagina y el numero de refrencias a disco, falta analizar otra posible referencia a disco en replaceInstructionV1
+        debug = Debug (I.getLineNumber instr) (fromIntegral $ fromJust $ elemIndex I.Null $ (getInstructions nRam)) 0 0 Zero
 
 --Cargo la misma instruccion las dos veces que se necesita
 loadInstruction :: Environment -> RAM -> RawInstruction -> RAM
-loadInstruction env ram rinstr = putInstructionInRAM env (putInstructionInRAM env ram (ft)) (sd)
+loadInstruction env ram rinstr = updateInstrCounter $ putInstructionInRAM env (putInstructionInRAM env ram (ft)) (sd)
         where   ft = I.fromRawInstruction First rinstr 
                 sd = I.fromRawInstruction Second rinstr
 

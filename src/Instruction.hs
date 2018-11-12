@@ -32,9 +32,9 @@ instance Ord Instruction where
     compare inst1 inst2 
                 | (getLineNumber inst1) < (getLineNumber inst2) = LT
                 | (getLineNumber inst1) > (getLineNumber inst2) = GT
-                | otherwise = 
-                    case (getDirtyBit inst1, getDirtyBit inst2) of  (One, Zero) -> GT
-                                                                    _  -> LT
+                | otherwise = LT
+                    -- case (getDirtyBit inst1, getDirtyBit inst2) of  (One, Zero) -> GT
+                    --                                                 _  -> LT
 
 
 

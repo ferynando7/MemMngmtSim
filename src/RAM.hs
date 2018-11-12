@@ -47,3 +47,6 @@ restartRefBits :: RAM -> RAM
 restartRefBits ram = ram {getInstructions = restartInstrs $ getInstructions ram, getInstrCounter = 0}
         where
             restartInstrs = map (\instr -> if instr == Null then Null else instr {getRefBit = Zero})
+
+
+--            trace (show $ putInstructionInRAM env (trace (show $ putInstructionInRAM env ram (ft)) $ putInstructionInRAM env ram (ft)) (sd)) $ putInstructionInRAM env (trace (show $ putInstructionInRAM env ram (ft)) $ putInstructionInRAM env ram (ft)) (sd)
